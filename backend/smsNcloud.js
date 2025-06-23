@@ -16,8 +16,9 @@ async function sendSMS(to, content) {
     const signature = makeSignature(date, method, uri);
 
     const body = {
-        type: "SMS",
+        type: "LMS",  // 👈 여기만 SMS → LMS 로 변경하면 끝!
         from: sens_caller,
+        subject: "크레디톡 본인인증 요청",  // LMS는 제목도 설정 가능
         content,
         messages: [{ to }],
     };
