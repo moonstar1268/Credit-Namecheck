@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CreditTalk 상대방 본인인증</title>
 
-  <!-- ── 간단한 스타일 ── -->
   <style>
     body{
       font-family:Arial,Helvetica,sans-serif;
@@ -60,14 +59,13 @@ const phoneInput = document.getElementById('phoneInput');
 const payButton  = document.getElementById('payButton');
 
 phoneInput.addEventListener('input', () => {
-  // `010`으로 시작하고 10~11자리인지 정규식 검사
   const ok = /^010\d{7,8}$/.test(phoneInput.value.replace(/[^0-9]/g, ''));
   payButton.disabled = !ok;
 });
 
 /* ---------- 2) PortOne(아임포트) 초기화 ---------- */
 const IMP = window.IMP;
-IMP.init('imp27065444');      // ← 발급받은 가맹점 식별코드
+IMP.init('imp27065444');      // 사용자의 실제 가맹점 식별코드 적용 완료
 
 /* ---------- 3) 결제 버튼 클릭 ---------- */
 payButton.addEventListener('click', () => {
@@ -75,7 +73,7 @@ payButton.addEventListener('click', () => {
 
   IMP.request_pay({
       pg: 'kakaopay.TC0ONETIME',    // 테스트 CID
-      pay_method: 'card',           // 간편결제도 card 지정
+      pay_method: 'card',           
       merchant_uid: 'verify_' + Date.now(),
       name: '상대방 본인인증 요청',
       amount: 1000,
@@ -84,8 +82,8 @@ payButton.addEventListener('click', () => {
       if (rsp.success) {
           alert('결제가 완료되었습니다! 인증 요청을 전송합니다.');
 
-          // 4) (선택) 백엔드로 결제·인증 요청 정보 전달
-          fetch('https://YOUR_BACKEND/api/createRequest', {
+          // 실제 배포된 Render 주소로 적용
+          fetch('https://credit-namecheck.onrender.com/api/createRequest', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -94,7 +92,10 @@ payButton.addEventListener('click', () => {
                   phone: targetPhone
               })
           })
-          .then(r => r.json())
+          .then(r => {
+            if (!r.ok) throw new Error('서버 응답이 실패했습니다.');
+            return r.json();
+          })
           .then(data => {
               alert('요청이 정상 전송되었습니다.\n상대방 인증 완료 시 알림이 도착합니다.');
           })
