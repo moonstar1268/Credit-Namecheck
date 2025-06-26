@@ -6,31 +6,31 @@
   <title>CreditTalk 상대방 본인인증</title>
 
   <style>
-    body{
-      font-family:Arial,Helvetica,sans-serif;
-      margin:2rem;
-      background:#f9fafb;
-      color:#333;
-      text-align:center;
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 2rem;
+      background: #f9fafb;
+      color: #333;
+      text-align: center;
     }
-    #wrap{max-width:420px;margin:auto}
-    input,button{
-      padding:.8rem;
-      font-size:1rem;
-      width:100%;
-      box-sizing:border-box;
-      margin-top:1rem;
+    #wrap { max-width: 420px; margin: auto; }
+    input, button {
+      padding: .8rem;
+      font-size: 1rem;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 1rem;
     }
-    button{
-      background:#3478ff;
-      border:0;
-      color:#fff;
-      border-radius:4px;
-      cursor:pointer;
+    button {
+      background: #3478ff;
+      border: 0;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
     }
-    button:disabled{
-      background:#a8c2ff;
-      cursor:not-allowed;
+    button:disabled {
+      background: #a8c2ff;
+      cursor: not-allowed;
     }
   </style>
 
@@ -65,24 +65,24 @@ phoneInput.addEventListener('input', () => {
 
 /* ---------- 2) PortOne(아임포트) 초기화 ---------- */
 const IMP = window.IMP;
-IMP.init('imp27065444');      // 사용자의 실제 가맹점 식별코드 적용 완료
+IMP.init('imp27065444');      // 가맹점 식별코드 유지
 
 /* ---------- 3) 결제 버튼 클릭 ---------- */
 payButton.addEventListener('click', () => {
   const targetPhone = phoneInput.value.replace(/[^0-9]/g, '');
 
   IMP.request_pay({
-      pg: 'kakaopay.TC0ONETIME',    // 테스트 CID
-      pay_method: 'card',           
+      pg: 'kakaopay.TC0ONETIME', // 테스트 CID
+      pay_method: 'card',
       merchant_uid: 'verify_' + Date.now(),
       name: '상대방 본인인증 요청',
       amount: 1000,
-      buyer_tel: targetPhone
+      buyer_tel: targetPhone,
+      m_redirect_url: "https://credit-namecheck.netlify.app" // 👈 모바일 환경 필수 추가!
   }, function (rsp) {
       if (rsp.success) {
           alert('결제가 완료되었습니다! 인증 요청을 전송합니다.');
 
-          // 실제 배포된 Render 주소로 적용
           fetch('https://credit-namecheck.onrender.com/api/createRequest', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -109,6 +109,39 @@ payButton.addEventListener('click', () => {
       }
   });
 });
+
+/* ---------- 4) 모바일 환경에서 URL 쿼리 처리 (결제 후 리다이렉트 시 호출됨) ---------- */
+$(document).ready(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const imp_uid = urlParams.get('imp_uid');
+  const merchant_uid = urlParams.get('merchant_uid');
+  const error_msg = urlParams.get('error_msg');
+
+  if (imp_uid && merchant_uid) {
+    // 결제 성공 후 리다이렉트된 경우 서버에 결제 정보 전송
+    fetch('https://credit-namecheck.onrender.com/api/createRequest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imp_uid, merchant_uid, phone: phoneInput.value })
+    })
+    .then(r => {
+      if (!r.ok) throw new Error('서버 응답이 실패했습니다.');
+      return r.json();
+    })
+    .then(data => {
+      alert('결제가 완료되었습니다!\n본인인증 요청이 정상 전송되었습니다.');
+    })
+    .catch(err => {
+      console.error(err);
+      alert('결제 후 서버 전송 중 오류가 발생했습니다.');
+    });
+  }
+
+  if (error_msg) {
+    alert('결제 실패: ' + decodeURIComponent(error_msg));
+  }
+});
 </script>
+
 </body>
 </html>
