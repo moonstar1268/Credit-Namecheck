@@ -4,39 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CreditTalk 상대방 본인인증</title>
-
   <style>
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      margin: 2rem;
-      background: #f9fafb;
-      color: #333;
-      text-align: center;
+    body{
+      font-family:Arial,Helvetica,sans-serif;
+      margin:2rem;
+      background:#f9fafb;
+      color:#333;
+      text-align:center;
     }
-    #wrap { max-width: 420px; margin: auto; }
-    input, button {
-      padding: .8rem;
-      font-size: 1rem;
-      width: 100%;
-      box-sizing: border-box;
-      margin-top: 1rem;
+    #wrap{max-width:420px;margin:auto}
+    input,button{
+      padding:.8rem;
+      font-size:1rem;
+      width:100%;
+      box-sizing:border-box;
+      margin-top:1rem;
     }
-    button {
-      background: #3478ff;
-      border: 0;
-      color: #fff;
-      border-radius: 4px;
-      cursor: pointer;
+    button{
+      background:#3478ff;
+      border:0;
+      color:#fff;
+      border-radius:4px;
+      cursor:pointer;
     }
-    button:disabled {
-      background: #a8c2ff;
-      cursor: not-allowed;
+    button:disabled{
+      background:#a8c2ff;
+      cursor:not-allowed;
     }
   </style>
-
-  <!-- jQuery (PortOne SDK가 의존) -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- PortOne(JavaScript) SDK -->
   <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
 </head>
 
@@ -54,7 +50,6 @@
 </div>
 
 <script>
-/* ---------- 1) 버튼 활성 조건 ---------- */
 const phoneInput = document.getElementById('phoneInput');
 const payButton  = document.getElementById('payButton');
 
@@ -63,78 +58,51 @@ phoneInput.addEventListener('input', () => {
   payButton.disabled = !ok;
 });
 
-/* ---------- 2) PortOne(아임포트) 초기화 ---------- */
 const IMP = window.IMP;
-IMP.init('imp27065444');      // 가맹점 식별코드 유지
+IMP.init('imp27065444');
 
-/* ---------- 3) 결제 버튼 클릭 ---------- */
 payButton.addEventListener('click', () => {
   const targetPhone = phoneInput.value.replace(/[^0-9]/g, '');
 
+  sessionStorage.setItem('targetPhone', targetPhone);
+
   IMP.request_pay({
-      pg: 'kakaopay.TC0ONETIME', // 테스트 CID
-      pay_method: 'card',
-      merchant_uid: 'verify_' + Date.now(),
-      name: '상대방 본인인증 요청',
-      amount: 1000,
-      buyer_tel: targetPhone,
-      m_redirect_url: "https://credit-namecheck.netlify.app" // 👈 모바일 환경 필수 추가!
+    pg: 'kakaopay.TC0ONETIME',
+    pay_method: 'card',
+    merchant_uid: 'verify_' + Date.now(),
+    name: '상대방 본인인증 요청',
+    amount: 1000,
+    buyer_tel: targetPhone,
+    m_redirect_url: 'https://credit-namecheck.netlify.app'
   }, function (rsp) {
-      if (rsp.success) {
-          alert('결제가 완료되었습니다! 인증 요청을 전송합니다.');
-
-          fetch('https://credit-namecheck.onrender.com/api/createRequest', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  imp_uid: rsp.imp_uid,
-                  merchant_uid: rsp.merchant_uid,
-                  phone: targetPhone
-              })
-          })
-          .then(r => {
-            if (!r.ok) throw new Error('서버 응답이 실패했습니다.');
-            return r.json();
-          })
-          .then(data => {
-              alert('요청이 정상 전송되었습니다.\n상대방 인증 완료 시 알림이 도착합니다.');
-          })
-          .catch(err => {
-              console.error(err);
-              alert('서버 통신 중 오류가 발생했습니다.');
-          });
-
-      } else {
-          alert('결제 실패: ' + rsp.error_msg);
-      }
+    if (!rsp.success) {
+      alert('결제 실패: ' + rsp.error_msg);
+    }
   });
 });
 
-/* ---------- 4) 모바일 환경에서 URL 쿼리 처리 (결제 후 리다이렉트 시 호출됨) ---------- */
-$(document).ready(function() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const imp_uid = urlParams.get('imp_uid');
-  const merchant_uid = urlParams.get('merchant_uid');
-  const error_msg = urlParams.get('error_msg');
+$(document).ready(() => {
+  const params = new URLSearchParams(window.location.search);
+  const imp_uid = params.get('imp_uid');
+  const merchant_uid = params.get('merchant_uid');
+  const error_msg = params.get('error_msg');
 
   if (imp_uid && merchant_uid) {
-    // 결제 성공 후 리다이렉트된 경우 서버에 결제 정보 전송
     fetch('https://credit-namecheck.onrender.com/api/createRequest', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imp_uid, merchant_uid, phone: phoneInput.value })
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        imp_uid,
+        merchant_uid,
+        phone: sessionStorage.getItem('targetPhone') || ''
+      })
     })
     .then(r => {
-      if (!r.ok) throw new Error('서버 응답이 실패했습니다.');
+      if (!r.ok) throw new Error('서버 응답 실패');
       return r.json();
     })
-    .then(data => {
-      alert('결제가 완료되었습니다!\n본인인증 요청이 정상 전송되었습니다.');
-    })
-    .catch(err => {
-      console.error(err);
-      alert('결제 후 서버 전송 중 오류가 발생했습니다.');
-    });
+    .then(() => alert('결제가 완료되었습니다! 인증 요청 전송 성공!'))
+    .catch(() => alert('결제 후 서버 전송 오류 발생'));
   }
 
   if (error_msg) {
@@ -142,6 +110,5 @@ $(document).ready(function() {
   }
 });
 </script>
-
 </body>
 </html>
