@@ -109,8 +109,8 @@ app.post('/api/verifyResult', async (req, res) => {
 
   const msg =
     result === 'success'
-      ? '[크레디톡] 상대방 본인인증이 완료되었습니다.'
-      : '[크레디톡] 상대방이 본인인증을 거절했습니다. 거래에 유의하세요.';
+      ? '[크레디톡] 상대방이 본인인증에 성공했습니다.'
+      : '[크레디톡] 상대방이 본인인증에 실패했습니다. 거래에 유의하세요.';
 
   try {
     await sendSMS(record.recv_phone, msg);
