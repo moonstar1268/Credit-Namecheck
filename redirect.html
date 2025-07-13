@@ -5,7 +5,7 @@
   const p = new URLSearchParams(location.search);
   const imp_uid      = p.get('imp_uid');
   const merchant_uid = p.get('merchant_uid');
-  const phone        = sessionStorage.getItem('targetPhone') || '';
+  const phone      = p.get('phone') || '';
 
   try{
     await fetch('https://credit-namecheck.onrender.com/api/createRequest',{
