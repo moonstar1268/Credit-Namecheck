@@ -88,7 +88,7 @@ payButton.addEventListener('click', () => {
     name        : '상대방 본인인증 요청',
     amount      : 1000,
     buyer_tel   : targetPhone,
-    m_redirect_url: 'https://credit-namecheck.netlify.app'
+    m_redirect_url: 'https://credit-namecheck.netlify.app/redirect.html'
   }, rsp => {
     if(!rsp.success) alert('결제 실패: ' + rsp.error_msg);
   });
