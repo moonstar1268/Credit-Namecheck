@@ -57,7 +57,7 @@ app.post('/api/createRequest', async (req, res) => {
       const link = `https://credit-namecheck.netlify.app/namecheck.html?id=${merchant_uid}`;
       await sendSMS(
         requester_phone,
-        `[크레디톡] 본인인증 요청이 도착했습니다.\n아래 링크에서 진행해주세요:\n${link}`
+        `[본인인증]:\n${link}`
       );
 
       console.log('createRequest 완료:', merchant_uid);
