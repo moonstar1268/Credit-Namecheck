@@ -6,14 +6,37 @@
   <title>CreditTalk 상대방 본인인증</title>
 
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:2rem;background:#f9fafb;color:#333;text-align:center}
+    body{
+      font-family:Arial,Helvetica,sans-serif;
+      margin:2rem;
+      background:#f9fafb;
+      color:#333;
+      text-align:center;
+    }
     #wrap{max-width:420px;margin:auto}
-    input,button{padding:.8rem;font-size:1rem;width:100%;box-sizing:border-box;margin-top:1rem}
-    button{background:#3478ff;border:0;color:#fff;border-radius:4px;cursor:pointer}
-    button:disabled{background:#a8c2ff;cursor:not-allowed}
+    input,button{
+      padding:.8rem;
+      font-size:1rem;
+      width:100%;
+      box-sizing:border-box;
+      margin-top:1rem;
+    }
+    button{
+      background:#3478ff;
+      border:0;
+      color:#fff;
+      border-radius:4px;
+      cursor:pointer;
+    }
+    button:disabled{
+      background:#a8c2ff;
+      cursor:not-allowed;
+    }
   </style>
 
+  <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- PortOne JS SDK (한 번만 로드) -->
   <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
 </head>
 
@@ -31,25 +54,26 @@
 </div>
 
 <script>
-/* ---------- 입력 검증 ---------- */
+/* ---------- 입력 검증 & 버튼 토글 ---------- */
 const phoneInput = document.getElementById('phoneInput');
 const payButton  = document.getElementById('payButton');
 
-function sanitize(v){ return v.replace(/\D/g,''); }
+function sanitize(v){ return v.replace(/\D/g,''); }          // 숫자만 추출
 function validPhone(v){ return /^010\d{7,8}$/.test(v); }
 
 function toggleButton(){
   const digits = sanitize(phoneInput.value);
-  phoneInput.value = digits;
+  phoneInput.value = digits;          // 하이픈·공백 즉시 제거
   payButton.disabled = !validPhone(digits);
 }
+
 ['input','keyup','change','paste'].forEach(ev =>
   phoneInput.addEventListener(ev, toggleButton)
 );
 document.addEventListener('DOMContentLoaded', toggleButton);
 
 /* ---------- PortOne 결제 ---------- */
-window.IMP.init('imp27065444');
+window.IMP.init('imp27065444');       // 전역 객체 직접 사용
 
 payButton.addEventListener('click', () => {
   const targetPhone = sanitize(phoneInput.value);
@@ -59,7 +83,7 @@ payButton.addEventListener('click', () => {
 
   window.IMP.request_pay(
     {
-      pg          : 'kakaopay.TC0ONETIME',
+      pg          : 'kakaopay.TC0ONETIME',   // 카카오페이 테스트 PG
       pay_method  : 'card',
       merchant_uid: 'verify_' + Date.now(),
       name        : '상대방 본인인증 요청',
