@@ -48,8 +48,7 @@ function handlePhoneInput(){
 document.addEventListener('DOMContentLoaded', handlePhoneInput);
 
 /* ---------- PortOne 결제 ---------- */
-const IMP = window.IMP;
-IMP.init('imp27065444');
+window.IMP.init('imp27065444');
 
 payButton.addEventListener('click', () => {
   const targetPhone = sanitizePhone(phoneInput.value);
