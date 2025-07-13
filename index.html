@@ -94,30 +94,6 @@ payButton.addEventListener('click', () => {
   });
 });
 
-/* ---------- 리디렉션 처리 ---------- */
-$(document).ready(() => {
-  const url = new URLSearchParams(location.search);
-  const imp_uid      = url.get('imp_uid');
-  const merchant_uid = url.get('merchant_uid');
-  const error_msg    = url.get('error_msg');
-
-  if(imp_uid && merchant_uid){
-    fetch('https://credit-namecheck.onrender.com/api/createRequest',{
-      method : 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body   : JSON.stringify({
-        imp_uid,
-        merchant_uid,
-        phone: sessionStorage.getItem('targetPhone') || ''
-      })
-    })
-    .then(r => { if(!r.ok) throw Error('서버 응답 실패'); return r.json(); })
-    .then(() => alert('결제가 완료되었습니다! 인증 요청 전송 성공!'))
-    .catch(() => alert('결제 후 서버 전송 오류 발생'));
-  }
-
-  if(error_msg) alert('결제 실패: ' + decodeURIComponent(error_msg));
-});
 </script>
 </body>
 </html>
