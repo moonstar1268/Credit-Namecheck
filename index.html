@@ -35,7 +35,7 @@
   </style>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- 최신 iamport SDK -->
+  <!-- 최신 PortOne JS SDK -->
   <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
 </head>
 
@@ -50,7 +50,7 @@
   </p>
 
   <input type="tel" id="phoneInput" placeholder="상대방 전화번호 입력 (010xxxxxxxx)" />
-  <button id="payButton" disabled>휴대폰 결제로 인증 요청&nbsp;(₩1,000)</button>
+  <button id="payButton" disabled>카카오페이로 인증 요청&nbsp;(₩1,000)</button>
 </div>
 
 <script>
@@ -72,16 +72,13 @@ payButton.addEventListener('click', () => {
   sessionStorage.setItem('targetPhone', targetPhone);
 
   IMP.request_pay({
-    /* 다날 휴대폰 결제(테스트) */
-    channelKey   : 'channel-key-39ee2afb-7f93-4154-ab7d-cbd70d51c76a',
-    pay_method   : 'phone',
-    digital      : false,                                     // 실물 거래
+    pg           : 'kakaopay.TC0ONETIME',   // 카카오페이 테스트 PG
+    pay_method   : 'card',
     merchant_uid : 'verify_' + Date.now(),
     name         : '상대방 본인인증 요청',
     amount       : 1000,
     buyer_tel    : targetPhone,
-    /* 결제 완료 뒤 리디렉션 – 전화번호를 QS로 전달 */
-    m_redirect_url: `https://credit-namecheck.netlify.app?phone=${targetPhone}`
+    m_redirect_url: 'https://credit-namecheck.netlify.app'  // 결제 완료 후 리디렉션
   }, rsp => {
     if (!rsp.success) alert('결제 실패: ' + rsp.error_msg);
   });
@@ -93,10 +90,6 @@ $(document).ready(() => {
   const imp_uid       = params.get('imp_uid');
   const merchant_uid  = params.get('merchant_uid');
   const error_msg     = params.get('error_msg');
-  const phoneQS       = params.get('phone');
-
-  /* 새 탭에서 sessionStorage 가 비어 있을 수 있으므로 QS 값 우선 저장 */
-  if (phoneQS) sessionStorage.setItem('targetPhone', phoneQS);
 
   /* 결제 완료 → 백엔드로 imp_uid‧전화번호 전송 */
   if (imp_uid && merchant_uid) {
