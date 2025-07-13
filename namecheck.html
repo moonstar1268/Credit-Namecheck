@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CreditTalk 본인인증</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;margin:2rem;background:#f9fafb;color:#333;text-align:center}
+    #wrap{max-width:420px;margin:auto}
+    button{padding:.8rem;font-size:1rem;width:100%;box-sizing:border-box;margin-top:2rem;background:#3478ff;border:0;color:#fff;border-radius:4px;cursor:pointer}
+  </style>
+
+  <!-- PortOne JS SDK -->
+  <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
+</head>
+
+<body>
+<div id="wrap">
+  <h2>본인인증 요청</h2>
+  <p>
+    “본인인증” 버튼을 누르면 휴대폰 본인확인을 진행합니다.<br>
+    인증이 완료되면 요청자에게 결과가 자동 전송됩니다.
+  </p>
+
+  <button id="certBtn">본인인증</button>
+</div>
+
+<script>
+/* ---------- URL에서 merchant_uid 추출 ---------- */
+const qs = new URLSearchParams(location.search);
+const merchant_uid = qs.get('id');           // /namecheck.html?id=verify_...
+if(!merchant_uid){
+  alert('잘못된 접근입니다.'); history.back();
+}
+
+window.IMP.init('imp27065444');              // 가맹점 식별코드 same as 결제
+
+document.getElementById('certBtn').onclick = () => {
+  window.IMP.certification(
+    {
+      pg          : 'danal',                 // 다날 본인확인
+      merchant_uid: 'cert_' + Date.now(),
+      m_redirect_url: `https://credit-namecheck.netlify.app/namecheck.html?id=${merchant_uid}` // 모바일용
+    },
+    async rsp => {                           // PC 브라우저 콜백
+      const result = rsp.success ? 'success' : 'fail';
+      await reportResult(result);
+    }
+  );
+};
+
+/* ---------- 모바일 리디렉션일 때도 처리 ---------- */
+(async () => {
+  const done = qs.get('imp_success');        // 모바일 redirect 시 success=...
+  if(done!==null){                           // null 이 아니면 본인인증이 끝난 상태
+    const result = done==='true' ? 'success' : 'fail';
+    await reportResult(result);
+  }
+})();
+
+/* ---------- 서버에 결과 보고 ---------- */
+async function reportResult(result){
+  try{
+    await fetch('https://credit-namecheck.onrender.com/api/verifyResult',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ merchant_uid, result })
+    });
+    alert(
+      result==='success'
+        ? '본인인증이 완료되었습니다.'
+        : '본인인증에 실패하였습니다.'
+    );
+    document.getElementById('certBtn').disabled = true;
+  }catch(e){
+    alert('결과 전송 중 오류가 발생했습니다.');
+  }
+}
+</script>
+</body>
+</html>
