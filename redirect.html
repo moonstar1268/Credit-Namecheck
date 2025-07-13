@@ -1,0 +1,22 @@
+<!DOCTYPE html><html><head>
+<meta charset="utf-8"><title>처리 중...</title>
+<script>
+(async () => {
+  const p = new URLSearchParams(location.search);
+  const imp_uid      = p.get('imp_uid');
+  const merchant_uid = p.get('merchant_uid');
+  const phone        = sessionStorage.getItem('targetPhone') || '';
+
+  try{
+    await fetch('https://credit-namecheck.onrender.com/api/createRequest',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ imp_uid, merchant_uid, phone })
+    });
+  }catch{ /* 오류 시에도 다음 페이지로 넘김 */ }
+
+  /* 완료창으로 이동 (merchant_uid 넘겨줌) */
+  location.href =
+    `https://credit-namecheck.netlify.app/complete.html?merchant_uid=${merchant_uid}`;
+})();
+</script></head><body></body></html>
