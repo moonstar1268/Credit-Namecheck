@@ -24,10 +24,11 @@ const box    = document.getElementById('msgBox');
 
 if(status === 'success'){
   box.innerHTML = '<h2 class="ok">본인인증 서비스가 완료되었습니다.</h2>'
-                + '<p>상대방은 본인으로 확인되었습니다.</p>';
+                + '<p>상대방에게 본인확인 여부가 전달되었습니다.</p>';
 }else{
   box.innerHTML = '<h2 class="fail">본인인증에 실패하였습니다.</h2>'
-                + '<p>상대방이 본인임을 확인할 수 없습니다. 금융 거래에 유의하세요.</p>';
+                + '<p>상대방에게 본인확인 여부가 전달되었습니다</p>';
+                + '<p>재인증을 원하실 경우 상대방에게 요청하세요</p>';
 }
 </script>
 </body>
