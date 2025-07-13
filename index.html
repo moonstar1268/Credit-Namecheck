@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CreditTalk 상대방 본인인증</title>
+
   <style>
     body{
       font-family:Arial,Helvetica,sans-serif;
@@ -32,25 +33,28 @@
       cursor:not-allowed;
     }
   </style>
+
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
+  <!-- 최신 iamport SDK -->
+  <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
 </head>
 
 <body>
 <div id="wrap">
   <h2>크레디톡 상대방 본인인증 사이트입니다.</h2>
   <p>
-    상대방에게 본인인증 요청 후,<br>
-    상대방이 본인인증을 완료할 경우 결과를 알려드립니다.<br>
-    상대방이 본인인증을 거절할 경우 거래에 유의하시길 바랍니다.<br>
-    Copyright (C) 한국금융범죄예방연구센터. All rights reserved. <br>
+    상대방에게 본인인증 요청 후,<br />
+    상대방이 본인인증을 완료할 경우 결과를 알려드립니다.<br />
+    상대방이 본인인증을 거절할 경우 거래에 유의하시길 바랍니다.<br />
+    Copyright (C) 한국금융범죄예방연구센터. All rights reserved.
   </p>
 
-  <input type="tel" id="phoneInput" placeholder="상대방 전화번호 입력 (010xxxxxxxx)">
-  <button id="payButton" disabled>카카오페이로 인증 요청 (₩1,000)</button>
+  <input type="tel" id="phoneInput" placeholder="상대방 전화번호 입력 (010xxxxxxxx)" />
+  <button id="payButton" disabled>휴대폰 결제로 인증 요청&nbsp;(₩1,000)</button>
 </div>
 
 <script>
+/* ----------------------- 입력 검증 ----------------------- */
 const phoneInput = document.getElementById('phoneInput');
 const payButton  = document.getElementById('payButton');
 
@@ -59,56 +63,58 @@ phoneInput.addEventListener('input', () => {
   payButton.disabled = !ok;
 });
 
+/* ----------------------- PortOne 결제 ----------------------- */
 const IMP = window.IMP;
-IMP.init('imp27065444');
+IMP.init('imp27065444');   // 가맹점 식별코드
 
 payButton.addEventListener('click', () => {
   const targetPhone = phoneInput.value.replace(/[^0-9]/g, '');
-
   sessionStorage.setItem('targetPhone', targetPhone);
 
   IMP.request_pay({
-    pg: 'kakaopay.TC0ONETIME',
-    pay_method: 'card',
-    merchant_uid: 'verify_' + Date.now(),
-    name: '상대방 본인인증 요청',
-    amount: 1000,
-    buyer_tel: targetPhone,
-    m_redirect_url: 'https://credit-namecheck.netlify.app'
-  }, function (rsp) {
-    if (!rsp.success) {
-      alert('결제 실패: ' + rsp.error_msg);
-    }
+    /* 다날 휴대폰 결제(테스트) */
+    channelKey   : 'channel-key-39ee2afb-7f93-4154-ab7d-cbd70d51c76a',
+    pay_method   : 'phone',
+    digital      : false,                                     // 실물 거래
+    merchant_uid : 'verify_' + Date.now(),
+    name         : '상대방 본인인증 요청',
+    amount       : 1000,
+    buyer_tel    : targetPhone,
+    /* 결제 완료 뒤 리디렉션 – 전화번호를 QS로 전달 */
+    m_redirect_url: `https://credit-namecheck.netlify.app?phone=${targetPhone}`
+  }, rsp => {
+    if (!rsp.success) alert('결제 실패: ' + rsp.error_msg);
   });
 });
 
+/* ----------------------- 리디렉션 페이지 로직 ----------------------- */
 $(document).ready(() => {
-  const params = new URLSearchParams(window.location.search);
-  const imp_uid = params.get('imp_uid');
-  const merchant_uid = params.get('merchant_uid');
-  const error_msg = params.get('error_msg');
+  const params        = new URLSearchParams(window.location.search);
+  const imp_uid       = params.get('imp_uid');
+  const merchant_uid  = params.get('merchant_uid');
+  const error_msg     = params.get('error_msg');
+  const phoneQS       = params.get('phone');
 
+  /* 새 탭에서 sessionStorage 가 비어 있을 수 있으므로 QS 값 우선 저장 */
+  if (phoneQS) sessionStorage.setItem('targetPhone', phoneQS);
+
+  /* 결제 완료 → 백엔드로 imp_uid‧전화번호 전송 */
   if (imp_uid && merchant_uid) {
     fetch('https://credit-namecheck.onrender.com/api/createRequest', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({
         imp_uid,
         merchant_uid,
         phone: sessionStorage.getItem('targetPhone') || ''
       })
     })
-    .then(r => {
-      if (!r.ok) throw new Error('서버 응답 실패');
-      return r.json();
-    })
+    .then(r => { if (!r.ok) throw new Error('서버 응답 실패'); return r.json(); })
     .then(() => alert('결제가 완료되었습니다! 인증 요청 전송 성공!'))
     .catch(() => alert('결제 후 서버 전송 오류 발생'));
   }
 
-  if (error_msg) {
-    alert('결제 실패: ' + decodeURIComponent(error_msg));
-  }
+  if (error_msg) alert('결제 실패: ' + decodeURIComponent(error_msg));
 });
 </script>
 </body>
