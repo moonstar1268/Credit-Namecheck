@@ -58,10 +58,17 @@
 const phoneInput = document.getElementById('phoneInput');
 const payButton  = document.getElementById('payButton');
 
-phoneInput.addEventListener('input', () => {
-  const ok = /^010\d{7,8}$/.test(phoneInput.value.replace(/[^0-9]/g, ''));
-  payButton.disabled = !ok;
-});
+function isValidPhone(num){
+  num = num.replace(/\D/g,'');
+  return /^010\d{7,8}$/.test(num);
+}
+
+function toggleButton(){
+  payButton.disabled = !isValidPhone(phoneInput.value);
+}
+
+phoneInput.addEventListener('input', toggleButton);
+document.addEventListener('DOMContentLoaded', toggleButton);
 
 /* ----------------------- PortOne 결제 ----------------------- */
 const IMP = window.IMP;
@@ -78,7 +85,7 @@ payButton.addEventListener('click', () => {
     name         : '상대방 본인인증 요청',
     amount       : 1000,
     buyer_tel    : targetPhone,
-    m_redirect_url: 'https://credit-namecheck.netlify.app'  // 결제 완료 후 리디렉션
+    m_redirect_url: 'https://credit-namecheck.netlify.app'
   }, rsp => {
     if (!rsp.success) alert('결제 실패: ' + rsp.error_msg);
   });
@@ -91,7 +98,6 @@ $(document).ready(() => {
   const merchant_uid  = params.get('merchant_uid');
   const error_msg     = params.get('error_msg');
 
-  /* 결제 완료 → 백엔드로 imp_uid‧전화번호 전송 */
   if (imp_uid && merchant_uid) {
     fetch('https://credit-namecheck.onrender.com/api/createRequest', {
       method : 'POST',
