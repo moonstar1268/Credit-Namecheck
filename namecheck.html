@@ -38,7 +38,7 @@ window.IMP.init('imp27065444');              // 가맹점 식별코드 same as �
 document.getElementById('certBtn').onclick = () => {
   window.IMP.certification(
     {
-      pg          : 'danal',                 // 다날 본인확인
+      pg: 'niceid_test',                 // 나이스 테스트용 - 추후 다날로 변경
       merchant_uid: 'cert_' + Date.now(),
       m_redirect_url: `https://credit-namecheck.netlify.app/namecheck.html?id=${merchant_uid}` // 모바일용
     },
