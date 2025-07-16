@@ -31,7 +31,7 @@ window.IMP.init('imp27065444');                     // 가맹점 식별코드
 document.getElementById('certBtn').onclick = () => {
   window.IMP.certification(
     {
-      pg          : 'niceid',                       // ✅ NICE 샌드박스
+      pg          : 'danal',                       // danal로 변경
       merchant_uid: 'cert_' + Date.now(),
       popup       : true,                           // 팝업에서 [성공]/[실패] 선택
       m_redirect_url: `https://credit-namecheck.netlify.app/namecheck.html?id=${merchant_uid}`
