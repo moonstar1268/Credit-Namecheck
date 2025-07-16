@@ -27,7 +27,7 @@
   </p>
 
   <input type="tel" id="phoneInput" placeholder="상대방 전화번호 입력 (010xxxxxxxx)"/>
-  <button id="payButton" disabled>결제 진행&nbsp;(₩1,000)</button>
+  <button id="payButton" disabled>이니시스 테스트 결제&nbsp;(₩1,000)</button>
 </div>
 
 <footer>
@@ -70,7 +70,7 @@ payButton.addEventListener('click', () => {
 
   window.IMP.request_pay(
     {
-      pg          : 'html5_inicis',          // ✅ 이니시스 테스트 PG
+      pg          : 'html5_inicis.INIpayTest',   // ✅ 이니시스 테스트 PG
       pay_method  : 'card',
       merchant_uid: 'verify_' + Date.now(),
       name        : '상대방 본인인증 요청',
