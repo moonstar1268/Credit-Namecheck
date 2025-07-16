@@ -70,12 +70,13 @@ payButton.addEventListener('click', () => {
 
   window.IMP.request_pay(
     {
-      pg          : 'html5_inicis.INIpayTest',   // ✅ 이니시스 테스트 PG
-      pay_method  : 'card',
+      /* ✅ 이니시스 테스트 채널 키 사용 */
+      channelKey : 'channel-key-9d652a3a-e681-4b89-8047-0bf250bf0ceb',
+      pay_method : 'card',
       merchant_uid: 'verify_' + Date.now(),
-      name        : '상대방 본인인증 요청',
-      amount      : 1000,
-      buyer_tel   : targetPhone,
+      name       : '상대방 본인인증 요청',
+      amount     : 1000,
+      buyer_tel  : targetPhone,
       m_redirect_url: `https://credit-namecheck.netlify.app/redirect.html?phone=${targetPhone}`
     },
     rsp => {
