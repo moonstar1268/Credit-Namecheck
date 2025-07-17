@@ -61,7 +61,7 @@ function toggle(){
 document.addEventListener('DOMContentLoaded',toggle);
 
 /* ---------- PortOne 결제 ---------- */
-window.IMP.init('imp27065444');
+window.IMP.init('imp27065444');          // 가맹점 식별코드
 
 payButton.addEventListener('click', () => {
   const targetPhone = digits(phoneInput.value);
@@ -70,13 +70,13 @@ payButton.addEventListener('click', () => {
 
   window.IMP.request_pay(
     {
-      /* ✅ 이니시스 테스트 채널 키 사용 */
-      channelKey : 'channel-key-9d652a3a-e681-4b89-8047-0bf250bf0ceb',
-      pay_method : 'card',
+      pg          : 'html5_inicis',      // 이니시스 표준
+      merchant_id : 'INIpayTest',        // 테스트 MID (대소문자 주의)
+      pay_method  : 'card',
       merchant_uid: 'verify_' + Date.now(),
-      name       : '상대방 본인인증 요청',
-      amount     : 1000,
-      buyer_tel  : targetPhone,
+      name        : '상대방 본인인증 요청',
+      amount      : 1000,
+      buyer_tel   : targetPhone,
       m_redirect_url: `https://credit-namecheck.netlify.app/redirect.html?phone=${targetPhone}`
     },
     rsp => {
@@ -84,12 +84,11 @@ payButton.addEventListener('click', () => {
         alert('결제 실패: ' + rsp.error_msg);
         return;
       }
-      const url =
+      location.href =
         `https://credit-namecheck.netlify.app/redirect.html`
         + `?imp_uid=${rsp.imp_uid}`
         + `&merchant_uid=${rsp.merchant_uid}`
         + `&phone=${targetPhone}`;
-      location.href = url;
     }
   );
 });
