@@ -14,7 +14,10 @@
     footer hr{margin:2.5rem 0}
   </style>
 
-  <!-- **V1 SDK** (레거시) -->
+  <!-- ① jQuery 먼저 로드 (V1 필수) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- ② V1 SDK -->
   <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
 </head>
 
@@ -51,7 +54,7 @@ const phoneInput = document.getElementById('phoneInput');
 const payButton  = document.getElementById('payButton');
 
 function digits(v){ return v.replace(/\D/g,''); }
-function okPhone(v){ return /^010\\d{7,8}$/.test(v); }
+function okPhone(v){ return /^010\d{7,8}$/.test(v); }
 
 function toggle(){
   const d = digits(phoneInput.value);
@@ -64,19 +67,17 @@ document.addEventListener('DOMContentLoaded',toggle);
 /* ---------- PortOne 결제 ---------- */
 IMP.init('imp27065444');    // 고객사 식별코드(userCode)
 
-/* 결제 버튼 */
 payButton.addEventListener('click', () => {
   const targetPhone = digits(phoneInput.value);
   if (!okPhone(targetPhone)) return;
 
   sessionStorage.setItem('targetPhone', targetPhone);
 
-  // **V1 파라미터 구조**
   IMP.request_pay(
     {
-      pg          : 'html5_inicis.MOI6271328',  // 이니시스 MID 지정
+      pg          : 'html5_inicis.MOI6271328',   // KG 이니시스 MID
       pay_method  : 'card',
-      merchant_uid: 'verify_' + Date.now(),     // 주문 고유번호
+      merchant_uid: 'verify_' + Date.now(),
       name        : '상대방 본인인증 요청',
       amount      : 1000,
       buyer_tel   : targetPhone,
@@ -87,7 +88,6 @@ payButton.addEventListener('click', () => {
         alert('결제 실패: ' + (rsp.error_msg || rsp.errorMessage));
         return;
       }
-      // PC 환경이면 여기서 바로 완료 콜백
       location.href =
         `https://credit-namecheck.netlify.app/redirect.html`
         + `?imp_uid=${rsp.imp_uid}`
