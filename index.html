@@ -13,8 +13,9 @@
     footer{margin-top:3rem;font-size:.85rem;line-height:1.4;color:#555}
     footer hr{margin:2.5rem 0}
   </style>
-  <!-- V2 SDK -->
-  <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+
+  <!-- **V1 SDK** (레거시) -->
+  <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
 </head>
 
 <body>
@@ -50,7 +51,7 @@ const phoneInput = document.getElementById('phoneInput');
 const payButton  = document.getElementById('payButton');
 
 function digits(v){ return v.replace(/\D/g,''); }
-function okPhone(v){ return /^010\d{7,8}$/.test(v); }
+function okPhone(v){ return /^010\\d{7,8}$/.test(v); }
 
 function toggle(){
   const d = digits(phoneInput.value);
@@ -61,42 +62,36 @@ function toggle(){
 document.addEventListener('DOMContentLoaded',toggle);
 
 /* ---------- PortOne 결제 ---------- */
-IMP.init('imp27065444');              // 고객사 식별코드(userCode)
+IMP.init('imp27065444');    // 고객사 식별코드(userCode)
 
 /* 결제 버튼 */
 payButton.addEventListener('click', () => {
   const targetPhone = digits(phoneInput.value);
   if (!okPhone(targetPhone)) return;
 
-  // (선택) 리다이렉트 페이지나 백엔드에서 다시 활용하려면 임시 저장
   sessionStorage.setItem('targetPhone', targetPhone);
 
+  // **V1 파라미터 구조**
   IMP.request_pay(
     {
-      // V2 필수 파라미터
-      storeId     : 'store-4e2cca00-943f-4fdf-aea8-e2090d641be5',
-      channelKey  : 'channel-key-189e9774-06c3-4fa1-a991-4b232bba14ef',
-
-      paymentId   : 'verify_' + Date.now(),     // 주문 고유번호
-      orderName   : '상대방 본인인증 요청',
-      totalAmount : 1000,
-      method      : { type: 'card' },
-
-      buyer       : { tel: targetPhone },
-
-      // 모바일 웹/앱에서 결제 완료 후 돌아올 주소
-      redirectUrl : `https://credit-namecheck.netlify.app/redirect.html?phone=${targetPhone}`
+      pg          : 'html5_inicis.MOI6271328',  // 이니시스 MID 지정
+      pay_method  : 'card',
+      merchant_uid: 'verify_' + Date.now(),     // 주문 고유번호
+      name        : '상대방 본인인증 요청',
+      amount      : 1000,
+      buyer_tel   : targetPhone,
+      m_redirect_url: `https://credit-namecheck.netlify.app/redirect.html?phone=${targetPhone}`
     },
     rsp => {
       if (!rsp.success) {
-        alert('결제 실패: ' + rsp.errorMessage);
+        alert('결제 실패: ' + (rsp.error_msg || rsp.errorMessage));
         return;
       }
-      // PC 환경이면 여기서 바로 완료 콜백이 떨어짐
+      // PC 환경이면 여기서 바로 완료 콜백
       location.href =
         `https://credit-namecheck.netlify.app/redirect.html`
         + `?imp_uid=${rsp.imp_uid}`
-        + `&payment_id=${rsp.paymentId}`
+        + `&merchant_uid=${rsp.merchant_uid}`
         + `&phone=${targetPhone}`;
     }
   );
