@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>CreditTalk 상대방 본인인증</title>
   <style>
     body{font-family:Arial,Helvetica,sans-serif;margin:2rem;background:#f9fafb;color:#333;text-align:center}
@@ -13,8 +13,8 @@
     footer{margin-top:3rem;font-size:.85rem;line-height:1.4;color:#555}
     footer hr{margin:2.5rem 0}
   </style>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
+  <!-- V2 SDK -->
+  <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
 </head>
 
 <body>
@@ -26,8 +26,8 @@
     상대방이 본인인증을 거절할 경우 거래에 유의하시길 바랍니다.
   </p>
 
-  <input type="tel" id="phoneInput" placeholder="상대방 전화번호 입력 (010xxxxxxxx)"/>
-  <button id="payButton" disabled> 결제&nbsp;(₩1,000)</button>
+  <input type="tel" id="phoneInput" placeholder="상대방 전화번호 입력 (010xxxxxxxx)">
+  <button id="payButton" disabled>결제&nbsp;(₩1,000)</button>
 </div>
 
 <footer>
@@ -61,33 +61,42 @@ function toggle(){
 document.addEventListener('DOMContentLoaded',toggle);
 
 /* ---------- PortOne 결제 ---------- */
-window.IMP.init('imp27065444');          // 가맹점 식별코드
+IMP.init('imp27065444');              // 고객사 식별코드(userCode)
 
+/* 결제 버튼 */
 payButton.addEventListener('click', () => {
   const targetPhone = digits(phoneInput.value);
   if (!okPhone(targetPhone)) return;
+
+  // (선택) 리다이렉트 페이지나 백엔드에서 다시 활용하려면 임시 저장
   sessionStorage.setItem('targetPhone', targetPhone);
 
-  window.IMP.request_pay(
+  IMP.request_pay(
     {
-      pg          : 'html5_inicis',      // 이니시스 표준
-      merchant_id : 'INIpayTest',        // 테스트 MID (대소문자 주의)
-      pay_method  : 'card',
-      merchant_uid: 'verify_' + Date.now(),
-      name        : '상대방 본인인증 요청',
-      amount      : 1000,
-      buyer_tel   : targetPhone,
-      m_redirect_url: `https://credit-namecheck.netlify.app/redirect.html?phone=${targetPhone}`
+      // V2 필수 파라미터
+      storeId     : 'store-4e2cca00-943f-4fdf-aea8-e2090d641be5',
+      channelKey  : 'channel-key-189e9774-06c3-4fa1-a991-4b232bba14ef',
+
+      paymentId   : 'verify_' + Date.now(),     // 주문 고유번호
+      orderName   : '상대방 본인인증 요청',
+      totalAmount : 1000,
+      method      : { type: 'card' },
+
+      buyer       : { tel: targetPhone },
+
+      // 모바일 웹/앱에서 결제 완료 후 돌아올 주소
+      redirectUrl : `https://credit-namecheck.netlify.app/redirect.html?phone=${targetPhone}`
     },
     rsp => {
       if (!rsp.success) {
-        alert('결제 실패: ' + rsp.error_msg);
+        alert('결제 실패: ' + rsp.errorMessage);
         return;
       }
+      // PC 환경이면 여기서 바로 완료 콜백이 떨어짐
       location.href =
         `https://credit-namecheck.netlify.app/redirect.html`
         + `?imp_uid=${rsp.imp_uid}`
-        + `&merchant_uid=${rsp.merchant_uid}`
+        + `&payment_id=${rsp.paymentId}`
         + `&phone=${targetPhone}`;
     }
   );
