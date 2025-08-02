@@ -22,14 +22,17 @@
 const status = new URLSearchParams(location.search).get('status');
 const box    = document.getElementById('msgBox');
 
-if(status === 'success'){
-  box.innerHTML = '<h2 class="ok">본인인증 서비스가 완료되었습니다.</h2>'
-                + '<p>상대방에게 본인확인 여부가 전달되었습니다.</p>';
-}else{
-  box.innerHTML = '<h2 class="fail">본인인증에 실패하였습니다.</h2>'
-                + '<p>상대방에게 본인확인 여부가 전달되었습니다</p>';
-                + '<p>재인증을 원하실 경우 상대방에게 요청하세요</p>';
+if (status === 'success') {
+  box.innerHTML =
+    '<h2 class="ok">본인인증 서비스가 완료되었습니다.</h2>' +
+    '<p>상대방에게 본인확인 여부가 전달되었습니다.</p>';
+} else {
+  box.innerHTML =
+    '<h2 class="fail">본인인증에 실패하였습니다.</h2>' +
+    '<p>상대방에게 본인확인 여부가 전달되었습니다.</p>' +
+    '<p>재인증을 원하실 경우 상대방에게 요청하세요</p>';
 }
 </script>
+
 </body>
 </html>
