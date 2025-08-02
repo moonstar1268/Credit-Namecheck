@@ -1,5 +1,4 @@
-```js
-// index.js (백틱 제거 버전)
+// index.js (수정본)
 require('dotenv').config();
 const express = require('express');
 const axios   = require('axios');
