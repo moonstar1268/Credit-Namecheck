@@ -35,7 +35,8 @@ async function getPortoneToken() {
 
 // 모바일 해시 생성 (선택)
 function makeMobileHash({ mid, oid, price, timestamp }) {
-  const msg = `${mid}${oid}${price}${timestamp}`;
+  // Template literal이 동작하지 않는 환경을 고려해 문자열 결합으로 변경
+  const msg = '' + mid + oid + price + timestamp;
   return crypto
     .createHmac('sha256', process.env.MOBILE_HASHKEY)
     .update(msg)
