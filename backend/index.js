@@ -173,7 +173,7 @@ app.post('/api/verifyResult', async (req, res) => {
 
     // 성공 메시지(인증정보가 있으면 포함)
     msg = (maskedName !== '-' && maskedPhone !== '-')
-      ? `[크레디톡] 본인인증이 완료되었습니다.\n이름 : ${maskedName}\n전화번호 : ${maskedPhone}`
+      ? `[크레디톡] 본인인증완료 \n이름 : ${maskedName}\n전화번호 : ${maskedPhone}`
       : `[크레디톡] 본인인증이 완료되었습니다.`;
   } else {
     msg = '[크레디톡] 상대방이 본인인증에 실패했습니다. 거래에 유의하세요.';
