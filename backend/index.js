@@ -194,9 +194,9 @@ app.post('/api/verifyResult', async (req, res) => {
     }
 
     // 최종 포맷 (요청하신 형식)
-    msg = `[Web발신]\n[크레디톡]\n${nameKr}\n${genderKr}\n${decadeKr}\n${phoneMasked}`;
+    msg = `[크레디톡]\n${nameKr}\n${genderKr}\n${decadeKr}\n${phoneMasked}`;
   } else {
-    msg = '[Web발신]\n[크레디톡]\n본인인증 실패\n거래에 유의하세요.';
+    msg = '[크레디톡]\n본인인증 실패\n거래에 유의하세요.';
   }
 
   try {
