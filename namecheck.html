@@ -1,4 +1,3 @@
-<!-- namecheck.html (변경됨) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -20,29 +19,53 @@
 </div>
 
 <script>
-const qs           = new URLSearchParams(location.search);
-const merchant_uid = qs.get('id');  // /namecheck.html?id=verify_...
+const qs = new URLSearchParams(location.search);
+const merchant_uid  = qs.get('id');                 // 필수
+const expectedPhone = (qs.get('expectedPhone') || '').replace(/\D/g,''); // 전화번호 고정값(숫자만)
+const expectedName  = qs.get('expectedName') || ''; // 선택: 이름 고정값
+const carrierParam  = qs.get('carrier') || '';      // 선택: 'SKT;KTF' 등
+const ageLimitParam = qs.get('ageLimit') || '';     // 선택: 최소 만 나이(숫자)
 if(!merchant_uid){ alert('잘못된 접근입니다.'); history.back(); }
 
 window.IMP.init('imp27065444');
 
 document.getElementById('certBtn').onclick = () => {
+  const customer = {};
+  if (expectedPhone && /^\d{10,11}$/.test(expectedPhone)) {
+    customer.phoneNumber = expectedPhone;      // 전화번호 고정
+  }
+  if (expectedName) {
+    customer.fullName = expectedName;          // 이름 고정(옵션)
+  }
+
+  // 다날 특수 파라미터
+  const danalBypass = { danal: {} };
+  if (carrierParam) {
+    danalBypass.danal.IsCarrier = carrierParam;  // 예: "SKT;KTF"
+  }
+  if (ageLimitParam && /^\d+$/.test(ageLimitParam)) {
+    danalBypass.danal.AGELIMIT = parseInt(ageLimitParam, 10); // 예: 20
+  }
+  // KISA ePrivacy Clean 권장값
+  danalBypass.danal.CPTITLE = 'credit-namecheck.netlify.app';
+
   window.IMP.certification(
     {
-      pg          : 'danal', // 휴대폰 본인확인 PG
-      merchant_uid: 'cert_' + Date.now(),
-      popup       : true,
-      m_redirect_url: `https://credit-namecheck.netlify.app/namecheck.html?id=${merchant_uid}`
+      pg            : 'danal',
+      merchant_uid  : 'cert_' + Date.now(),
+      popup         : true,
+      m_redirect_url: `https://credit-namecheck.netlify.app/namecheck.html?id=${encodeURIComponent(merchant_uid)}`,
+      customer,
+      bypass: danalBypass
     },
     rsp => {
-      // PC 콜백
       const certImpUid = rsp?.imp_uid || null;
       forwardResult(rsp.success ? 'success' : 'fail', certImpUid);
     }
   );
 };
 
-// 모바일 리다이렉트 처리(PortOne 표준 파라미터)
+// 모바일 리다이렉트 처리
 if(qs.has('imp_success')){
   const certImpUid = qs.get('imp_uid') || null;
   const ok = qs.get('imp_success') === 'true';
@@ -56,8 +79,6 @@ async function forwardResult(result, cert_imp_uid){
       headers:{'Content-Type':'application/json'},
       body   : JSON.stringify({ merchant_uid, result, cert_imp_uid })
     });
-  }catch(e){
-    // silently ignore
   }finally{
     location.href = `https://credit-namecheck.netlify.app/done.html?status=${result}`;
   }
