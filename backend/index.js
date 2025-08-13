@@ -178,7 +178,9 @@ app.post('/api/verifyResult', async (req, res) => {
         const rawGender =
           cert?.gender || cert?.sex || cert?.genderCode || '';
         const rawBirth =
-          cert?.birth  || cert?.birthday || cert?.birthdate || cert?.birthDate || cert?.yyyyMMdd || '';
+          cert?.birthday ||             // "YYYY-MM-DD" 형식
+          cert?.birth    ||             // 19980620 (number/string)
+          cert?.birthdate || cert?.birthDate || cert?.yyyyMMdd || '';
         const rawPhone =
           cert?.phone  || cert?.phone_number || cert?.phoneNo ||
           cert?.mobile || cert?.mobile_number || cert?.cellphone ||
