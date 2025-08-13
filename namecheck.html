@@ -1,3 +1,4 @@
+<!-- namecheck.html (변경됨) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -11,7 +12,6 @@
   </style>
   <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
 </head>
-
 <body>
 <div id="wrap">
   <h2>본인인증 요청</h2>
@@ -20,43 +20,45 @@
 </div>
 
 <script>
-/* ── URL 파라미터에서 merchant_uid(id) 추출 ── */
 const qs           = new URLSearchParams(location.search);
-const merchant_uid = qs.get('id');                  // /namecheck.html?id=verify_...
+const merchant_uid = qs.get('id');  // /namecheck.html?id=verify_...
 if(!merchant_uid){ alert('잘못된 접근입니다.'); history.back(); }
 
-/* ── PortOne 휴대폰 본인확인 (지금은 NICE 테스트) ── */
-window.IMP.init('imp27065444');                     // 가맹점 식별코드
+window.IMP.init('imp27065444');
 
 document.getElementById('certBtn').onclick = () => {
   window.IMP.certification(
     {
-      pg          : 'danal',                       // danal로 변경
+      pg          : 'danal', // 휴대폰 본인확인 PG
       merchant_uid: 'cert_' + Date.now(),
-      popup       : true,                           // 팝업에서 [성공]/[실패] 선택
+      popup       : true,
       m_redirect_url: `https://credit-namecheck.netlify.app/namecheck.html?id=${merchant_uid}`
     },
-    rsp => forwardResult(rsp.success ? 'success' : 'fail')   // PC 브라우저
+    rsp => {
+      // PC 콜백
+      const certImpUid = rsp?.imp_uid || null;
+      forwardResult(rsp.success ? 'success' : 'fail', certImpUid);
+    }
   );
 };
 
-/* ── 모바일 리다이렉트 처리 ── */
+// 모바일 리다이렉트 처리(PortOne 표준 파라미터)
 if(qs.has('imp_success')){
-  forwardResult(qs.get('imp_success') === 'true' ? 'success' : 'fail');
+  const certImpUid = qs.get('imp_uid') || null;
+  const ok = qs.get('imp_success') === 'true';
+  forwardResult(ok ? 'success' : 'fail', certImpUid);
 }
 
-/* ── 서버에 결과 전송 후 done.html 로 이동 ── */
-async function forwardResult(result){
+async function forwardResult(result, cert_imp_uid){
   try{
     await fetch('https://credit-namecheck.onrender.com/api/verifyResult',{
       method :'POST',
       headers:{'Content-Type':'application/json'},
-      body   : JSON.stringify({ merchant_uid, result })
+      body   : JSON.stringify({ merchant_uid, result, cert_imp_uid })
     });
   }catch(e){
-    /* 전송 실패해도 화면은 넘겨 줌 */
+    // silently ignore
   }finally{
-    /* ✅ 완료 페이지로 이동 */
     location.href = `https://credit-namecheck.netlify.app/done.html?status=${result}`;
   }
 }
