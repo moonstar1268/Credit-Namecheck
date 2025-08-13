@@ -34,7 +34,7 @@ async function getCertificationByImpUid(certImpUid) {
     `https://api.iamport.kr/certifications/${certImpUid}`,
     { headers: { Authorization: token } }
   );
-  return res.data.response; // { name, gender, birth, phone, ... } (PG/환경별 키 다름)
+  return res.data.response || {}; // { name, gender, birth, phone, ... }
 }
 
 /* ---------- (선택) 모바일 해시 ---------- */
@@ -47,44 +47,35 @@ function makeMobileHash(params) {
 function mapGenderToKr(g) {
   if (!g && g !== 0) return '-';
   const s = String(g).toLowerCase();
-  // 대표 케이스: male/female, m/f, 1/2 (주민번호 성별코드), 3/4/5/6/7/8도 확장
   if (['male','m','1','3','5','7'].includes(s))  return '남자';
   if (['female','f','2','4','6','8'].includes(s)) return '여자';
   return '-';
 }
 
-function toDecadeKr(birthLike) {
-  // birthLike: 'YYYYMMDD' | 'YYYY-MM-DD' | Date-like 문자열
+function toDecadeKrFromBirthLike(birthLike) {
   if (!birthLike) return '-';
   const ds = String(birthLike).replace(/\D/g,'');
   if (ds.length < 4) return '-';
   const yyyy = parseInt(ds.slice(0,4), 10);
   if (isNaN(yyyy) || yyyy < 1900 || yyyy > 2100) return '-';
   const now = new Date();
-  const age = now.getFullYear() - yyyy; // 만 나이 아님(대략 연령대용)
+  const age = now.getFullYear() - yyyy; // 대략적인 연령대 계산
   if (age < 0 || age > 120) return '-';
   const decade = Math.floor(age / 10) * 10;
   return decade >= 10 ? `${decade}대` : '10대 미만';
 }
 
+// 가운데(중간 블록) 앞 2자리만 '**'로 마스킹, 구분자는 'ㅡ'
 function maskPhoneMiddleTwoKorea(digits) {
-  // 요구사항: 가운데 그룹(중간 블록)의 **앞 2자리만** 마스킹, 구분자는 'ㅡ' 사용
-  // 예) 010-7175-1067 -> 010ㅡ**75ㅡ1067
   const d = (digits || '').replace(/\D/g,'');
   let a,b,c;
-  if (d.length === 11) { a = d.slice(0,3); b = d.slice(3,7); c = d.slice(7,11); }
-  else if (d.length === 10) { a = d.slice(0,3); b = d.slice(3,6); c = d.slice(6,10); }
-  else return digits || '-';
-
-  if (b.length >= 2) {
-    const rest = b.slice(2); // 앞 2자리만 마스킹
-    b = '**' + rest;
-  } else if (b.length === 1) {
-    b = '*';
-  } else {
-    b = '**';
-  }
-  const SEP = 'ㅡ'; // U+3161
+  if (d.length === 11) { a=d.slice(0,3); b=d.slice(3,7); c=d.slice(7,11); }
+  else if (d.length === 10) { a=d.slice(0,3); b=d.slice(3,6); c=d.slice(6,10); }
+  else return '-';
+  if (b.length >= 2) b = '**' + b.slice(2);
+  else if (b.length === 1) b = '*';
+  else b = '**';
+  const SEP = 'ㅡ';
   return `${a}${SEP}${b}${SEP}${c}`;
 }
 
@@ -94,7 +85,7 @@ function maskPhoneMiddleTwoKorea(digits) {
 app.post('/api/createRequest', async (req, res) => {
   const imp_uid = req.body.imp_uid;
   const merchant_uid = req.body.merchant_uid;
-  const requesterPhone = req.body.phone;
+  const requesterPhone = req.body.phone; // 인증을 수행할 상대방 번호
 
   try {
     // 결제 검증
@@ -109,13 +100,18 @@ app.post('/api/createRequest', async (req, res) => {
     }
 
     store.set(merchant_uid, {
-      requesterPhone,          // 링크 받을 대상(상대방)
+      requesterPhone,          // 인증 링크 수신자(=인증 당사자)
       recvPhone: null,         // 결제자가 결과 받을 번호
       verifyStatus: 'pending',
       updatedAt: Date.now()
     });
 
-    const link = 'https://credit-namecheck.netlify.app/namecheck.html?id=' + merchant_uid;
+    // 기대 전화번호를 namecheck에 쿼리로 넘겨 다날 인증창에서 고정
+    const link =
+      'https://credit-namecheck.netlify.app/namecheck.html'
+      + `?id=${encodeURIComponent(merchant_uid)}`
+      + `&expectedPhone=${encodeURIComponent(requesterPhone)}`;
+
     await sendSMS(requesterPhone, `[크레디톡] 본인인증 요청\n${link}`);
 
     res.json({ success:true });
@@ -125,7 +121,7 @@ app.post('/api/createRequest', async (req, res) => {
   }
 });
 
-// 2) 결과 수신 번호 저장
+// 2) 결과 수신 번호 저장 (결제자가 결과 받을 번호)
 app.post('/api/saveReceiver', (req, res) => {
   const merchant_uid = req.body.merchant_uid;
   const recvPhone = req.body.recv_phone;
@@ -136,7 +132,7 @@ app.post('/api/saveReceiver', (req, res) => {
   res.json({ success:true });
 });
 
-// 3) 본인인증 결과 처리 → 이름/성별/연령대/전화(가운데 2자리 마스킹) 전송
+// 3) 본인인증 결과 처리 → 이름/성별/연령대/전화 전송
 app.post('/api/verifyResult', async (req, res) => {
   let { merchant_uid, result, cert_imp_uid } = req.body;
 
@@ -168,44 +164,43 @@ app.post('/api/verifyResult', async (req, res) => {
       if (cert_imp_uid) {
         const cert = await getCertificationByImpUid(cert_imp_uid);
 
-        // 여러 후보 키에서 안전하게 추출
+        // 어떤 키가 왔는지 안전 로그(값 길이만) — 운영 중엔 제거 가능
+        const safeLog = {};
+        Object.keys(cert || {}).forEach(k => {
+          const v = cert[k];
+          const t = typeof v;
+          safeLog[k] = (v == null) ? null : (t === 'string' ? `${t}(${v.length})` : t);
+        });
+        console.log('[cert payload keys]', safeLog);
+
+        // 여러 후보 키에서 안전 추출
         const rawName  = cert?.name || cert?.certified_name || '';
-        const rawPhone =
-          cert?.phone ||
-          cert?.phone_number ||
-          cert?.carrier_phone ||
-          cert?.birth_phone ||
-          cert?.phoneNo ||
-          '';
         const rawGender =
-          cert?.gender ||
-          cert?.sex ||
-          cert?.genderCode ||
-          '';
+          cert?.gender || cert?.sex || cert?.genderCode || '';
         const rawBirth =
-          cert?.birth ||
-          cert?.birthday ||
-          cert?.birthdate ||
-          cert?.birthDate ||
-          '';
+          cert?.birth  || cert?.birthday || cert?.birthdate || cert?.birthDate || cert?.yyyyMMdd || '';
+        const rawPhone =
+          cert?.phone  || cert?.phone_number || cert?.phoneNo ||
+          cert?.mobile || cert?.mobile_number || cert?.cellphone ||
+          cert?.carrier_phone || cert?.tel || '';
 
         nameKr     = rawName || '-';
         genderKr   = mapGenderToKr(rawGender);
-        decadeKr   = toDecadeKr(rawBirth);
+        decadeKr   = toDecadeKrFromBirthLike(rawBirth);
         phoneMasked= rawPhone ? maskPhoneMiddleTwoKorea(rawPhone) : '-';
       }
     } catch (e) {
       console.error('[verifyResult] 인증조회 실패 →', e.response?.data || e.message);
     }
 
-    // 최종 메시지 포맷
-    msg = `[크레디톡]\n${nameKr}\n${genderKr}\n${decadeKr}\n${phoneMasked}`;
+    // 최종 포맷 (요청하신 형식)
+    msg = `[Web발신]\n[크레디톡]\n${nameKr}\n${genderKr}\n${decadeKr}\n${phoneMasked}`;
   } else {
-    msg = '[크레디톡]\n본인인증 실패\n거래에 유의하세요.';
+    msg = '[Web발신]\n[크레디톡]\n본인인증 실패\n거래에 유의하세요.';
   }
 
   try {
-    await sendSMS(record.recvPhone, msg);
+    await sendSMS(record.recvPhone, msg); // smsNcloud가 길이에 따라 SMS/LMS 전환
     res.json({ success:true });
   } catch (err) {
     console.error('[verifyResult] SMS 전송 실패 →', err.response?.data || err.message);
