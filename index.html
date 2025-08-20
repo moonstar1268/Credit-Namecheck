@@ -5,19 +5,56 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>CreditTalk 상대방 본인인증</title>
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:2rem;background:#f9fafb;color:#333;text-align:center}
+    :root{--bg:#f9fafb;--fg:#333;--muted:#555;--brand:#3478ff;--brand-weak:#a8c2ff;--border:#e5e7eb}
+    *{box-sizing:border-box}
+    body{font-family:Arial,Helvetica,sans-serif;margin:2rem;background:var(--bg);color:var(--fg);text-align:center}
     #wrap{max-width:420px;margin:auto}
+    h2{margin-bottom:.75rem}
+    p{margin:.25rem 0}
     input,button{padding:.8rem;font-size:1rem;width:100%;box-sizing:border-box;margin-top:1rem}
-    button{background:#3478ff;border:0;color:#fff;border-radius:4px;cursor:pointer}
-    button:disabled{background:#a8c2ff;cursor:not-allowed}
-    footer{margin-top:3rem;font-size:.85rem;line-height:1.4;color:#555}
+    input{border:1px solid var(--border);border-radius:6px}
+    button{background:var(--brand);border:0;color:#fff;border-radius:6px;cursor:pointer}
+    button:disabled{background:var(--brand-weak);cursor:not-allowed}
+    footer{margin-top:3rem;font-size:.85rem;line-height:1.6;color:var(--muted)}
     footer hr{margin:2.5rem 0}
+    .links{margin:.5rem 0 1rem}
+    .links a{color:#1f4dd8;text-decoration:underline;cursor:pointer;margin:0 .4rem}
+    .fine{font-size:.8rem;color:#666}
+
+    /* Modal */
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.45);
+      display:none;align-items:center;justify-content:center;padding:1rem;z-index:1000
+    }
+    .modal{
+      width:min(860px,95vw);max-height:85vh;background:#fff;border-radius:10px;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);text-align:left;overflow:hidden
+    }
+    .modal header{
+      padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between
+    }
+    .modal header h3{margin:0;font-size:1.05rem}
+    .modal .modal-body{
+      padding:1rem 1.25rem;overflow:auto;line-height:1.65
+    }
+    .modal .modal-body h4{margin:1.1rem 0 .4rem;font-size:1rem}
+    .modal .modal-body p,.modal .modal-body li{font-size:.95rem}
+    .modal footer{
+      padding:.75rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end
+    }
+    .close-btn{
+      border:1px solid var(--border);background:#fff;color:#222;border-radius:6px;padding:.55rem .9rem;cursor:pointer
+    }
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    /* Small note */
+    .legal-note{margin-top:.75rem;font-size:.8rem;color:#666}
   </style>
 
-  <!-- ① jQuery 먼저 로드 (V1 필수) -->
+  <!-- ① jQuery (V1 필수) -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-  <!-- ② V1 SDK -->
+  <!-- ② PortOne(V1) SDK -->
   <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
 </head>
 
@@ -30,12 +67,21 @@
     상대방이 본인인증을 거절할 경우 거래에 유의하시길 바랍니다.
   </p>
 
-  <input type="tel" id="phoneInput" placeholder="상대방 전화번호 입력 (010xxxxxxxx)">
-  <button id="payButton" disabled>결제&nbsp;(₩1,000)</button>
+  <input type="tel" id="phoneInput" placeholder="상대방 전화번호 입력 (010xxxxxxxx)" inputmode="numeric" autocomplete="tel">
+  <button id="payButton" disabled aria-disabled="true">결제&nbsp;(₩1,000)</button>
+
+  <p class="legal-note">
+    결제 진행 시 <a href="#" data-open="terms">이용약관</a>과 <a href="#" data-open="privacy">개인정보처리방침</a>에 동의한 것으로 간주됩니다.
+  </p>
 </div>
 
 <footer>
   <hr>
+  <div class="links">
+    <a href="#" data-open="terms">이용약관</a> |
+    <a href="#" data-open="privacy">개인정보처리방침</a>
+  </div>
+
   <p><strong>본 서비스는 환불 및 교환이 불가능함을 고지드립니다.</strong></p>
   <p>
     한국금융범죄예방연구센터(주)&nbsp;강기호<br>
@@ -46,7 +92,124 @@
     기타&nbsp;: 문의&nbsp;전정은&nbsp;실장&nbsp;010-9797-7298<br>
     Copyright© 한국금융범죄예방연구센터 (주). All&nbsp;Rights&nbsp;Reserved.
   </p>
+  <p class="fine">최종 업데이트: 2025-08-20</p>
 </footer>
+
+<!-- ===== Modals ===== -->
+<!-- 이용약관 -->
+<div class="modal-backdrop" id="modal-terms" role="dialog" aria-modal="true" aria-labelledby="modal-terms-title">
+  <div class="modal" tabindex="-1">
+    <header>
+      <h3 id="modal-terms-title">이용약관</h3>
+      <button class="close-btn" data-close="terms" aria-label="이용약관 닫기">닫기</button>
+    </header>
+    <div class="modal-body">
+      <p>본 약관은 한국금융범죄예방연구센터(주)(이하 “회사”)가 제공하는 서비스의 이용 조건 및 절차, 회사와 이용자의 권리·의무 및 책임사항을 규정합니다.</p>
+
+      <h4>제1조 (목적)</h4>
+      <p>본 약관은 회사가 제공하는 연구·교육 및 본인인증 관련 부가서비스(이하 “서비스”) 이용에 관한 기본 사항을 정함을 목적으로 합니다.</p>
+
+      <h4>제2조 (약관의 효력 및 변경)</h4>
+      <p>회사는 관련 법령을 위반하지 않는 범위에서 약관을 변경할 수 있으며, 변경 시 웹사이트 공지로 효력이 발생합니다.</p>
+
+      <h4>제3조 (서비스의 제공)</h4>
+      <ul>
+        <li>서비스 내용: 상대방 본인인증 요청, 인증 결과 고지, 관련 컨설팅·교육 콘텐츠 제공 등</li>
+        <li>운영상 또는 기술상 필요 시 서비스 내용이 변경될 수 있으며, 중요한 변경은 사전 고지합니다.</li>
+      </ul>
+
+      <h4>제4조 (이용자의 의무)</h4>
+      <ul>
+        <li>법령 및 약관 준수, 타인의 권리 침해 금지</li>
+        <li>허위 정보 입력, 부정 결제, 불법·유해 목적 사용 금지</li>
+      </ul>
+
+      <h4>제5조 (요금, 결제 및 환불)</h4>
+      <ul>
+        <li>유료 서비스는 결제 완료 시점부터 제공됩니다.</li>
+        <li><strong>서비스 특성상 환불 및 교환이 불가</strong>합니다. 단, 전자상거래 등에서의 소비자보호에 관한 법률 등 강행규정이 있는 경우에는 그에 따릅니다.</li>
+      </ul>
+
+      <h4>제6조 (개인정보 보호)</h4>
+      <p>회사는 개인정보처리방침에 따라 이용자의 개인정보를 처리합니다. 자세한 내용은 개인정보처리방침을 확인하시기 바랍니다.</p>
+
+      <h4>제7조 (면책)</h4>
+      <ul>
+        <li>천재지변, 통신장애 등 불가항력으로 인한 서비스 중단에 대하여 회사는 책임을 지지 않습니다.</li>
+        <li>이용자의 귀책사유로 발생한 문제에 대하여 회사는 책임을 지지 않습니다.</li>
+      </ul>
+
+      <h4>제8조 (분쟁 해결 및 관할)</h4>
+      <p>분쟁은 상호 협의로 해결하며, 협의가 어려운 경우 회사 본사 소재지 관할 법원을 전속 관할로 합니다.</p>
+    </div>
+    <footer>
+      <button class="close-btn" data-close="terms">확인</button>
+    </footer>
+  </div>
+</div>
+
+<!-- 개인정보처리방침 -->
+<div class="modal-backdrop" id="modal-privacy" role="dialog" aria-modal="true" aria-labelledby="modal-privacy-title">
+  <div class="modal" tabindex="-1">
+    <header>
+      <h3 id="modal-privacy-title">개인정보처리방침</h3>
+      <button class="close-btn" data-close="privacy" aria-label="개인정보처리방침 닫기">닫기</button>
+    </header>
+    <div class="modal-body">
+      <p>한국금융범죄예방연구센터(주)(이하 “회사”)는 「개인정보 보호법」 등 관련 법령을 준수하며, 다음과 같이 개인정보를 처리합니다.</p>
+
+      <h4>1. 수집하는 개인정보 항목</h4>
+      <ul>
+        <li>필수: 성명, 연락처(전화번호, 이메일), 결제정보(결제사에 한정)</li>
+        <li>선택: 소속, 직책</li>
+      </ul>
+
+      <h4>2. 처리 목적</h4>
+      <ul>
+        <li>고객 문의 응대, 서비스 제공 및 운영</li>
+        <li>결제 승인, 정산 및 회계 처리</li>
+        <li>법령상 의무 이행 및 분쟁 대응</li>
+      </ul>
+
+      <h4>3. 보유 및 이용 기간</h4>
+      <ul>
+        <li>서비스 제공 및 고객 응대: 수집일로부터 3년</li>
+        <li>관련 법령(전자상거래법, 국세기본법 등)상 의무 보존 기간 준수 후 지체 없이 파기</li>
+      </ul>
+
+      <h4>4. 제3자 제공 및 처리위탁</h4>
+      <ul>
+        <li>원칙적으로 제3자 제공을 하지 않습니다. 법령 근거 또는 별도 동의 시에만 제공합니다.</li>
+        <li>결제 처리 등을 위해 결제대행사 등 수탁자에게 위탁할 수 있으며, 위탁 사실과 범위를 공개합니다.</li>
+      </ul>
+
+      <h4>5. 정보주체의 권리</h4>
+      <ul>
+        <li>열람·정정·삭제·처리정지 요구권 및 동의 철회권을 행사할 수 있습니다.</li>
+        <li>회사는 법령이 정한 바에 따라 지체 없이 조치합니다.</li>
+      </ul>
+
+      <h4>6. 개인정보 보호책임자</h4>
+      <ul>
+        <li>성명: 전정은 실장</li>
+        <li>연락처: 010-9797-7298</li>
+        <li>이메일: leekd5904@daum.net</li>
+      </ul>
+
+      <h4>7. 안전성 확보 조치</h4>
+      <ul>
+        <li>접속 기록 보관 및 위변조 방지, 최소권한 원칙 적용, 암호화(결제정보는 결제사 보관)</li>
+      </ul>
+
+      <h4>8. 고지 의무</h4>
+      <p>본 방침의 내용 추가·삭제·수정이 있을 경우 개정 최소 7일 전에 웹사이트 공지사항을 통해 고지합니다.</p>
+    </div>
+    <footer>
+      <button class="close-btn" data-close="privacy">확인</button>
+    </footer>
+  </div>
+</div>
+<!-- ===== /Modals ===== -->
 
 <script>
 /* ---------- 입력 검증 ---------- */
@@ -59,7 +222,9 @@ function okPhone(v){ return /^010\d{7,8}$/.test(v); }
 function toggle(){
   const d = digits(phoneInput.value);
   phoneInput.value = d;
-  payButton.disabled = !okPhone(d);
+  const ok = okPhone(d);
+  payButton.disabled = !ok;
+  payButton.setAttribute('aria-disabled', String(!ok));
 }
 ['input','keyup','change','paste'].forEach(ev => phoneInput.addEventListener(ev,toggle));
 document.addEventListener('DOMContentLoaded',toggle);
@@ -71,11 +236,12 @@ payButton.addEventListener('click', () => {
   const targetPhone = digits(phoneInput.value);
   if (!okPhone(targetPhone)) return;
 
+  // 선택: 약관 팝업 확인 유도 필요 시 체크박스 도입 가능(현 버전은 고지 및 간주 동의 방식)
   sessionStorage.setItem('targetPhone', targetPhone);
 
   IMP.request_pay(
     {
-      pg          : 'html5_inicis.MOI6271328',   // KG 이니시스 MID
+      pg          : 'html5_inicis.MOI6271328',   // KG 이니시스 MID
       pay_method  : 'card',
       merchant_uid: 'verify_' + Date.now(),
       name        : '상대방 본인인증 요청',
@@ -85,16 +251,67 @@ payButton.addEventListener('click', () => {
     },
     rsp => {
       if (!rsp.success) {
-        alert('결제 실패: ' + (rsp.error_msg || rsp.errorMessage));
+        alert('결제 실패: ' + (rsp.error_msg || rsp.errorMessage || '알 수 없는 오류'));
         return;
       }
       location.href =
         `https://credit-namecheck.netlify.app/redirect.html`
-        + `?imp_uid=${rsp.imp_uid}`
-        + `&merchant_uid=${rsp.merchant_uid}`
-        + `&phone=${targetPhone}`;
+        + `?imp_uid=${encodeURIComponent(rsp.imp_uid)}`
+        + `&merchant_uid=${encodeURIComponent(rsp.merchant_uid)}`
+        + `&phone=${encodeURIComponent(targetPhone)}`;
     }
   );
+});
+
+/* ---------- Modal: open/close ---------- */
+function openModal(which){
+  const id = which === 'terms' ? 'modal-terms' : 'modal-privacy';
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.display = 'flex';
+  // 포커스 이동
+  const firstButton = el.querySelector('button[data-close]');
+  if (firstButton) firstButton.focus();
+
+  // ESC 닫기
+  function onEsc(e){
+    if(e.key === 'Escape'){ closeModal(which); }
+  }
+  el.dataset.esc = '1';
+  document.addEventListener('keydown', onEsc, { once:true });
+}
+
+function closeModal(which){
+  const id = which === 'terms' ? 'modal-terms' : 'modal-privacy';
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.display = 'none';
+}
+
+// 열기 트리거
+document.querySelectorAll('[data-open]').forEach(a=>{
+  a.addEventListener('click', e=>{
+    e.preventDefault();
+    openModal(a.dataset.open);
+  });
+});
+
+// 닫기 트리거
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', e=>{
+    e.preventDefault();
+    closeModal(btn.dataset.close);
+  });
+});
+
+// 바깥 클릭 시 닫기
+['modal-terms','modal-privacy'].forEach(id=>{
+  const backdrop = document.getElementById(id);
+  backdrop.addEventListener('click', (e)=>{
+    if(e.target === backdrop){
+      closeModal(id==='modal-terms'?'terms':'privacy');
+    }
+  });
 });
 </script>
 </body>
